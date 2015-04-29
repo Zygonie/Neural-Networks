@@ -1,5 +1,6 @@
 import numpy as np
-# import matplotlib.pyplot as plt
+import time
+import matplotlib.pyplot as plt
 
 
 def sigmoid(x_input):
@@ -19,7 +20,7 @@ class Layer:
         self.nb_output = nb_output
         self.bias = []
         if mode == 'random':
-            self.weights = np.random.uniform(-1, 1, (nb_output, nb_input+1))
+            self.weights = 2 * np.random.uniform(-1, 1, (nb_output, nb_input+1))
         elif mode == 'ones':
             self.weights = np.ones((nb_output, nb_input+1))
     
@@ -71,17 +72,15 @@ class NN:
         for layer, layer_output in zip(reversed(self.layers), reversed(self.layer_outputs[:-1])):
             layer_output = np.concatenate((layer.bias, layer_output))
             next_error = self.error[-1][1:]
-            prod = layer.weights.T.dot(next_error)
-            prod1 = prod * layer_output
-            prod2 = prod1 * (1-layer_output)
-            self.error.append(prod2)
+            temp = layer.weights.T.dot(next_error) * layer_output * (1-layer_output)
+            self.error.append(temp)
         self.error.reverse()
 
     def update_weights(self):
         for layer, error, layer_output in zip(self.layers, self.error[1:], self.layer_outputs[:-1]):
             error = error[1:]
             layer_output = np.concatenate((layer.bias, layer_output))
-            layer.weights -= error.dot(layer_output.T)
+            layer.weights -= self.learning_rate * error.dot(layer_output.T) + 0.1*layer.weights/error.shape[1]
 
     def output(self, x_input):
         a = np.array(x_input)
@@ -92,34 +91,50 @@ class NN:
         return a
 
 
+def test_function(x_in):
+    return sigmoid(x_in)
+    # return x_in**4
+
+
 # *****************************************
 # Main called function
 # *****************************************
 if __name__ == '__main__':
     # Simulation d'une fonction x^2
-    network = NN(topology=[1, 2, 1])
-    x = np.arange(-10, 10.1, 0.1)
+    network = NN(topology=[1, 9, 1])
+    x = np.arange(-2, 2.1, 0.1)
     x = x.reshape(1, x.shape[0])
-    y = sigmoid(x)
+    y = test_function(x)
     y_min = np.min(y)
     y_max = np.max(y)
-    y = 0.9 * (y - y_min) / (y_max - y_min)
-    for n in xrange(int(1e4)):
-        network.train(x, y, learning_rate=0.9)
+    y_to_fit = 0.9 * (y - y_min) / (y_max - y_min)
+    plt.plot(x.flatten(), y.flatten(), '.r')
+    plt.ion()
+    plt.ylim((y_min-0.1, y_max+0.1))
+    plt.show(False)  # pas bloquant
+    for n in xrange(int(1e3)):
+        network.train(x, y_to_fit, learning_rate=0.1)
+        fit = [(network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9 for i in x.T]
+        plt.clf()
+        plt.plot(x.flatten(), y.flatten(), '.r')
+        plt.plot(x.flatten(), fit)
+        plt.ylim((y_min-0.1, y_max+0.1))
+        plt.draw()
+        time.sleep(0.001)
     print 'Fonction square'
     for i in range(5):
-        res = (network.output([[i]])[0, 0] * (y_max - y_min) + y_min) / 0.9
-        print '{}\t{:.4f}\texpected {:.4f}'.format(i, res , sigmoid(i))
+        res = fit[i]
+        print '{}\t{:.4f}\texpected {:.4f}'.format(x[0, i], res, y[i])
     # Simulation d'une fonction circle
-    network = NN(topology=[2, 4, 1])
+    network = NN(topology=[2, 3, 1])
     np.random.seed(100)
     x = np.random.uniform(-1, 1, (2, 10))
     y = circle(x)
     y_min = np.min(y)
     y_max = np.max(y)
     y = 0.9 * (y - y_min) / (y_max - y_min)
-    for n in xrange(int(1e4)):
-        network.train(x, y, learning_rate=0.1)
+    for n in xrange(int(1e3)):
+        network.train(x, y, learning_rate=0.9)
     print 'Fonction circle'
     for i in x.T:
         res = (network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9
@@ -129,7 +144,7 @@ if __name__ == '__main__':
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
     y = np.array([0, 1, 1, 0])
     for n in xrange(int(1e3)):
-        network.train(X, y, learning_rate=0.2)
+        network.train(X, y, learning_rate=0.9)
     print 'Fonction XOR'
     print 'Input\tOutput\tQuantized'
     for i in [[0, 0], [1, 0], [0, 1], [1, 1]]:
@@ -139,7 +154,7 @@ if __name__ == '__main__':
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
     y = np.array([0, 1, 1, 1])
     for n in xrange(int(1e3)):
-        network.train(X, y, learning_rate=0.2)
+        network.train(X, y, learning_rate=0.9)
     print 'Fonction OR'
     print 'Input\tOutput\tQuantized'
     for i in [[0, 0], [1, 0], [0, 1], [1, 1]]:
