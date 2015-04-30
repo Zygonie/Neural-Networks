@@ -20,7 +20,7 @@ class Layer:
         self.nb_output = nb_output
         self.bias = []
         if mode == 'random':
-            self.weights = 2 * np.random.uniform(-1, 1, (nb_output, nb_input+1))
+            self.weights = 20 * np.random.uniform(-1, 1, (nb_output, nb_input+1))
         elif mode == 'ones':
             self.weights = np.ones((nb_output, nb_input+1))
     
@@ -35,7 +35,7 @@ class Layer:
         return z
 
 
-class NN:
+class MLP:
     def __init__(self, topology, mode='random'):
         # topology: an array of length equal to the number of layers.
         # Each coordinate is the number of nodes in the layer
@@ -80,7 +80,8 @@ class NN:
         for layer, error, layer_output in zip(self.layers, self.error[1:], self.layer_outputs[:-1]):
             error = error[1:]
             layer_output = np.concatenate((layer.bias, layer_output))
-            layer.weights -= self.learning_rate * error.dot(layer_output.T) + 0.1*layer.weights/error.shape[1]
+            layer.weights -= self.learning_rate * error.dot(layer_output.T) \
+                             + 0.01 * layer.weights/error.shape[1]
 
     def output(self, x_input):
         a = np.array(x_input)
@@ -92,8 +93,9 @@ class NN:
 
 
 def test_function(x_in):
-    return sigmoid(x_in)
-    # return x_in**4
+    # return sigmoid(x_in)
+    # return x_in**3
+    return np.sin(x_in)
 
 
 # *****************************************
@@ -101,8 +103,9 @@ def test_function(x_in):
 # *****************************************
 if __name__ == '__main__':
     # Simulation d'une fonction x^2
-    network = NN(topology=[1, 9, 1])
-    x = np.arange(-2, 2.1, 0.1)
+    np.random.seed(100)
+    network = MLP(topology=[1, 128, 128, 128, 128, 1])
+    x = np.arange(-10, 10.1, 0.25)
     x = x.reshape(1, x.shape[0])
     y = test_function(x)
     y_min = np.min(y)
@@ -112,21 +115,22 @@ if __name__ == '__main__':
     plt.ion()
     plt.ylim((y_min-0.1, y_max+0.1))
     plt.show(False)  # pas bloquant
-    for n in xrange(int(1e3)):
-        network.train(x, y_to_fit, learning_rate=0.1)
-        fit = [(network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9 for i in x.T]
-        plt.clf()
-        plt.plot(x.flatten(), y.flatten(), '.r')
-        plt.plot(x.flatten(), fit)
-        plt.ylim((y_min-0.1, y_max+0.1))
-        plt.draw()
-        time.sleep(0.001)
+    for n in xrange(int(1e5)):
+        network.train(x, y_to_fit, learning_rate=0.0005)
+        if n > 1e4:
+            fit = [(network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9 for i in x.T]
+            plt.clf()
+            plt.title('GO!')
+            plt.plot(x.flatten(), y.flatten(), '.r')
+            plt.plot(x.flatten(), fit)
+            plt.draw()
+            time.sleep(0.001)
     print 'Fonction square'
     for i in range(5):
         res = fit[i]
         print '{}\t{:.4f}\texpected {:.4f}'.format(x[0, i], res, y[i])
     # Simulation d'une fonction circle
-    network = NN(topology=[2, 3, 1])
+    network = MLP(topology=[2, 3, 1])
     np.random.seed(100)
     x = np.random.uniform(-1, 1, (2, 10))
     y = circle(x)
@@ -140,7 +144,7 @@ if __name__ == '__main__':
         res = (network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9
         print '{}\t{:.4f}\texpected {:.4f}'.format(i, res, circle(i.reshape(-1, 1))[0])
     # Simulation d'une fonction XOR
-    network = NN(topology=[2, 2, 4, 1])
+    network = MLP(topology=[2, 2, 4, 1])
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
     y = np.array([0, 1, 1, 0])
     for n in xrange(int(1e3)):
@@ -150,7 +154,7 @@ if __name__ == '__main__':
     for i in [[0, 0], [1, 0], [0, 1], [1, 1]]:
         print '{}\t{:.4f}\t{}'.format(i, network.output(i)[0, 0], 1*(network.output(i)[0] > .5))
     # Simulation d'une fonction OR
-    network = NN(topology=[2, 2, 4, 1])
+    network = MLP(topology=[2, 2, 4, 1])
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
     y = np.array([0, 1, 1, 1])
     for n in xrange(int(1e3)):
