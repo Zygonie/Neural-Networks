@@ -1,4 +1,5 @@
 __author__ = 'guiand1'
+# from http://nbviewer.ipython.org/github/craffel/theano-tutorial/blob/master/Theano%20Tutorial.ipynb
 import theano
 # By convention, the tensor submodule is loaded as T
 import theano.tensor as T

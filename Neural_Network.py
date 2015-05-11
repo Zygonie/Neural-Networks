@@ -1,3 +1,4 @@
+# To test with http://nbviewer.ipython.org/github/AlexanderFabisch/ml_tutorials/blob/gh-pages/03_ann.ipynb
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ class Layer:
         self.nb_output = nb_output
         self.bias = []
         if mode == 'random':
-            self.weights = 20 * np.random.uniform(-1, 1, (nb_output, nb_input+1))
+            self.weights = 1 * np.random.uniform(-1, 1, (nb_output, nb_input+1))
         elif mode == 'ones':
             self.weights = np.ones((nb_output, nb_input+1))
     
@@ -93,56 +94,46 @@ class MLP:
 
 
 def test_function(x_in):
-    # return sigmoid(x_in)
+    return sigmoid(x_in)
     # return x_in**3
-    return np.sin(x_in)
+    # return np.sin(x_in)
 
 
 # *****************************************
 # Main called function
 # *****************************************
 if __name__ == '__main__':
-    # Simulation d'une fonction x^2
+    # Simulation d'une fonction
     np.random.seed(100)
-    network = MLP(topology=[1, 128, 128, 128, 128, 1])
+    network = MLP(topology=[1, 4, 4, 1])
     x = np.arange(-10, 10.1, 0.25)
     x = x.reshape(1, x.shape[0])
     y = test_function(x)
     y_min = np.min(y)
     y_max = np.max(y)
-    y_to_fit = 0.9 * (y - y_min) / (y_max - y_min)
+    y_to_fit = 0.9 * (y - y_min) / (y_max - y_min) + 0.1
     plt.plot(x.flatten(), y.flatten(), '.r')
     plt.ion()
     plt.ylim((y_min-0.1, y_max+0.1))
     plt.show(False)  # pas bloquant
-    for n in xrange(int(1e5)):
-        network.train(x, y_to_fit, learning_rate=0.0005)
-        if n > 1e4:
-            fit = [(network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9 for i in x.T]
-            plt.clf()
-            plt.title('GO!')
-            plt.plot(x.flatten(), y.flatten(), '.r')
-            plt.plot(x.flatten(), fit)
-            plt.draw()
-            time.sleep(0.001)
-    print 'Fonction square'
-    for i in range(5):
-        res = fit[i]
-        print '{}\t{:.4f}\texpected {:.4f}'.format(x[0, i], res, y[i])
-    # Simulation d'une fonction circle
-    network = MLP(topology=[2, 3, 1])
-    np.random.seed(100)
-    x = np.random.uniform(-1, 1, (2, 10))
-    y = circle(x)
-    y_min = np.min(y)
-    y_max = np.max(y)
-    y = 0.9 * (y - y_min) / (y_max - y_min)
     for n in xrange(int(1e3)):
-        network.train(x, y, learning_rate=0.9)
-    print 'Fonction circle'
-    for i in x.T:
-        res = (network.output(i)[0, 0] * (y_max - y_min) + y_min) / 0.9
-        print '{}\t{:.4f}\texpected {:.4f}'.format(i, res, circle(i.reshape(-1, 1))[0])
+        network.train(x, y_to_fit, learning_rate=0.01)
+        fit = [((network.output(i)[0, 0] - 0.1) * (y_max - y_min) + y_min) / 0.9 for i in x.T]
+        # if n > 1e3:
+        #     fit = [((network.output(i)[0, 0] - 0.1) * (y_max - y_min) + y_min) / 0.9 for i in x.T]
+        #     plt.clf()
+        #     plt.ylim((y_min-0.1, y_max+0.1))
+        #     plt.title('GO!')
+        #     plt.plot(x.flatten(), y.flatten(), '.r')
+        #     plt.plot(x.flatten(), fit)
+        #     plt.draw()
+        #     time.sleep(0.001)
+    plt.clf()
+    plt.ylim((y_min-0.1, y_max+0.1))
+    plt.plot(x.flatten(), y.flatten(), '.r')
+    plt.plot(x.flatten(), fit)
+    plt.draw()
+
     # Simulation d'une fonction XOR
     network = MLP(topology=[2, 2, 4, 1])
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
@@ -153,6 +144,7 @@ if __name__ == '__main__':
     print 'Input\tOutput\tQuantized'
     for i in [[0, 0], [1, 0], [0, 1], [1, 1]]:
         print '{}\t{:.4f}\t{}'.format(i, network.output(i)[0, 0], 1*(network.output(i)[0] > .5))
+
     # Simulation d'une fonction OR
     network = MLP(topology=[2, 2, 4, 1])
     X = np.array([[0, 1, 0, 1], [0, 0, 1, 1]])
